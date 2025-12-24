@@ -90,12 +90,12 @@ class MainActivity
         val rssi = result.rssi
         Log.d("BLE", "Detected ${result.device.address} – RSSI: $rssi")
 
-        if (rssi > -70) {
+        if (rssi > -85) {
             audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
-            statusText.text = "Inside range → Silent Mode"
+            statusText.text = "Inside the  range → Silent Mode"
         } else {
             audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
-            statusText.text = "Outside range → Normal Mode"
+            statusText.text = "Outoff the range → Normal Mode"
         }
     }
 }
