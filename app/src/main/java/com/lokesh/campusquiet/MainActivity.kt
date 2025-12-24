@@ -92,10 +92,10 @@ class MainActivity
 
         if (rssi > -85) {
             audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
-            statusText.text = "Inside the  range → Silent Mode"
+            statusText.text = "Inside the  range → \uD83D\uDD15 Silent Mode"
         } else {
             audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
-            statusText.text = "Outoff the range → Normal Mode"
+            statusText.text = "Outoff the range → \uD83D\uDD14 Normal Mode"
         }
     }
 }
