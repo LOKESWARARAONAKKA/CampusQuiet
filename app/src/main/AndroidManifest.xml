@@ -2,29 +2,41 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.lokesh.campusquiet">
 
-    <!-- Bluetooth Permissions -->
+    <!-- 🔹 Bluetooth permissions -->
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-
-    <!-- Do Not Disturb Access -->
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+
+    <uses-feature
+        android:name="android.hardware.bluetooth_le"
+        android:required="true" />
 
     <application
         android:allowBackup="true"
         android:label="CampusQuiet"
+        android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.CampusQuiet">
 
+        <!-- 🔹 LOGIN SCREEN (FIRST) -->
         <activity
-            android:name=".MainActivity"
-            android:exported="true">      <!-- ⭐ FIXED -->
+            android:name=".LoginActivity"
+            android:exported="true">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
         </activity>
+
+        <!-- 🔹 MAIN ACTIVITY -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false" />
 
     </application>
 
