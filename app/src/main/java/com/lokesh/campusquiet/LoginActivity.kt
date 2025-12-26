@@ -15,59 +15,46 @@ class LoginActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Initialize Firebase Auth
-        auth = FirebaseAuth.getInstance()
-
-        // ✅ AUTO LOGIN CHECK
-        if (auth.currentUser != null) {
-            startActivity(Intent(this, MainActivity::class.java))
-            finish()
-            return
-        }
-
-        // Load UI
         setContentView(R.layout.activity_login)
 
-        // Views
+        auth = FirebaseAuth.getInstance()
+
         val emailEt = findViewById<EditText>(R.id.etEmail)
         val passwordEt = findViewById<EditText>(R.id.etPassword)
         val loginBtn = findViewById<Button>(R.id.btnLogin)
-        val registerTxt = findViewById<TextView>(R.id.txtRegister)
+        val registerTv = findViewById<TextView>(R.id.tvRegister)
 
-        // Login button
         loginBtn.setOnClickListener {
 
             val email = emailEt.text.toString().trim()
             val password = passwordEt.text.toString().trim()
 
             if (email.isEmpty() || password.isEmpty()) {
-                Toast.makeText(this, "Email and Password required", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Enter email & password", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
             auth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
+                .addOnSuccessListener {
 
-                        Toast.makeText(this, "Login successful", Toast.LENGTH_SHORT).show()
-
-                        startActivity(Intent(this, MainActivity::class.java))
-                        finish()
-
-                    } else {
-                        Toast.makeText(
-                            this,
-                            task.exception?.message ?: "Login failed",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
+                    startActivity(
+                        Intent(this, MainActivity::class.java)
+                    )
+                    finish()
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(
+                        this,
+                        "Login failed: ${e.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
         }
 
-        // Go to Register screen
-        registerTxt.setOnClickListener {
-            startActivity(Intent(this, RegisterActivity::class.java))
+        registerTv.setOnClickListener {
+            startActivity(
+                Intent(this, RegisterActivity::class.java)
+            )
         }
     }
 }

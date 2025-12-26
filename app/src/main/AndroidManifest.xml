@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.lokesh.campusquiet">
-    <!-- 🔹 Bluetooth permissions -->
+
+    <!-- Bluetooth & Location Permissions -->
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
 
@@ -14,27 +16,37 @@
 
     <application
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@android:drawable/ic_lock_silent_mode_off"
         android:label="CampusQuiet"
-        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.CampusQuiet">
-        <activity
-            android:name=".RegisterActivity"
-            android:exported="false" />
-        <!-- 🔹 LOGIN SCREEN (FIRST) -->
+
+        <!-- 🔹 LOGIN (LAUNCHER) -->
         <activity
             android:name=".LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity> <!-- 🔹 MAIN ACTIVITY -->
+        </activity>
+
+        <!-- 🔹 REGISTER -->
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="false" />
+
+        <!-- 🔹 HOME -->
         <activity
             android:name=".MainActivity"
             android:exported="false" />
+
+        <!-- 🔹 BACKGROUND SERVICE -->
+        <service
+            android:name=".BeaconScanService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+
     </application>
 
 </manifest>
