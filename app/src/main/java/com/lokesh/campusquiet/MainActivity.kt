@@ -1,7 +1,6 @@
 package com.lokesh.campusquiet
 
 import android.Manifest
-import android.app.NotificationManager
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.le.*
 import android.content.Intent
@@ -12,17 +11,18 @@ import android.provider.Settings
 import android.util.Log
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 
-class MainActivity
-    : AppCompatActivity() {
+class MainActivity : AppCompatActivity() {
 
     private val btAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
     private lateinit var audioManager: AudioManager
     private lateinit var statusText: TextView
 
-    private val TARGET_MAC = "4C:C3:82:BF:6D:AE"   // change to ESP32 MAC
+    // 🔁 Change this to your ESP32 MAC address
+    private val TARGET_MAC = "4C:C3:82:BF:6D:AE"
 
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
@@ -37,9 +37,16 @@ class MainActivity
         audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
         statusText = findViewById(R.id.statusText)
 
-        val btnStart = findViewById<Button>(R.id.btnStart)
-        btnStart.setOnClickListener {
+        findViewById<Button>(R.id.btnStart).setOnClickListener {
+            checkBluetooth()
             requestAllPermissions()
+        }
+    }
+
+    private fun checkBluetooth() {
+        if (btAdapter == null || !btAdapter.isEnabled) {
+            Toast.makeText(this, "Please enable Bluetooth", Toast.LENGTH_LONG).show()
+            startActivity(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
         }
     }
 
@@ -51,23 +58,16 @@ class MainActivity
         )
 
         ActivityCompat.requestPermissions(this, perms, 100)
-
-        if (!notificationAccessGranted()) {
-            startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
-        }
-
         startScanning()
     }
 
-    private fun notificationAccessGranted(): Boolean {
-        val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        return nm.isNotificationPolicyAccessGranted
-    }
-
     private fun startScanning() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN)
-            != PackageManager.PERMISSION_GRANTED) {
-            statusText.text = "Scan permission not granted"
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.BLUETOOTH_SCAN
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            statusText.text = "Bluetooth scan permission not granted"
             return
         }
 
@@ -88,14 +88,14 @@ class MainActivity
 
     private fun handleScan(result: ScanResult) {
         val rssi = result.rssi
-        Log.d("BLE", "Detected ${result.device.address} – RSSI: $rssi")
+        Log.d("BLE", "Detected ${result.device.address} RSSI: $rssi")
 
         if (rssi > -85) {
             audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
-            statusText.text = "Inside the  range → \uD83D\uDD15 Silent Mode"
+            statusText.text = "Inside the range → 🔕 Silent Mode"
         } else {
             audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
-            statusText.text = "Outoff the range → \uD83D\uDD14 Normal Mode"
+            statusText.text = "Out of range → 🔔 Normal Mode"
         }
     }
 }

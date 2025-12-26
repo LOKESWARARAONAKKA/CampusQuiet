@@ -16,19 +16,26 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // ✅ THIS LINE WAS MISSING (MAJOR ERROR)
-        setContentView(R.layout.activity_login)
-
-        // ✅ Initialize Firebase Auth
+        // Initialize Firebase Auth
         auth = FirebaseAuth.getInstance()
 
-        // ✅ Initialize Views
+        // ✅ AUTO LOGIN CHECK
+        if (auth.currentUser != null) {
+            startActivity(Intent(this, MainActivity::class.java))
+            finish()
+            return
+        }
+
+        // Load UI
+        setContentView(R.layout.activity_login)
+
+        // Views
         val emailEt = findViewById<EditText>(R.id.etEmail)
         val passwordEt = findViewById<EditText>(R.id.etPassword)
         val loginBtn = findViewById<Button>(R.id.btnLogin)
         val registerTxt = findViewById<TextView>(R.id.txtRegister)
 
-        // ✅ Login button
+        // Login button
         loginBtn.setOnClickListener {
 
             val email = emailEt.text.toString().trim()
@@ -45,7 +52,6 @@ class LoginActivity : AppCompatActivity() {
 
                         Toast.makeText(this, "Login successful", Toast.LENGTH_SHORT).show()
 
-                        // Go to Home screen
                         startActivity(Intent(this, MainActivity::class.java))
                         finish()
 
@@ -59,7 +65,7 @@ class LoginActivity : AppCompatActivity() {
                 }
         }
 
-        // ✅ Go to Register screen
+        // Go to Register screen
         registerTxt.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
