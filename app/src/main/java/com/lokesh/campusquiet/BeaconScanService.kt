@@ -1,101 +1,128 @@
 package com.lokesh.campusquiet
 
-import android.Manifest
-import android.app.*
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.le.*
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
+import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.media.AudioManager
 import android.os.Build
 import android.os.IBinder
-import android.util.Log
-import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import org.altbeacon.beacon.BeaconManager
+import org.altbeacon.beacon.Region
+import java.text.DecimalFormat
 
 class BeaconScanService : Service() {
 
-    private val CHANNEL_ID = "CampusQuietChannel"
-    private val NOTIFICATION_ID = 1
+    private lateinit var beaconManager: BeaconManager
+    private val region = Region("CampusQuiet", null, null, null)
 
-    // 🔁 Replace with your ESP32 MAC
-    private val TARGET_MAC = "4C:C3:82:BF:6D:AE"
+    // This flag tracks if the app is currently enforcing the classroom policy.
+    private var isPolicyEnforced = false
 
-    private val bluetoothAdapter: BluetoothAdapter? =
-        BluetoothAdapter.getDefaultAdapter()
+    private val DISTANCE_THRESHOLD = 10.0
+    private val df = DecimalFormat("#.##")
 
-    private lateinit var audioManager: AudioManager
-
-    private val scanCallback = object : ScanCallback() {
-        override fun onScanResult(callbackType: Int, result: ScanResult) {
-            val rssi = result.rssi
-            Log.d("BeaconScan", "RSSI = $rssi")
-
-            if (rssi > -85) {
-                audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
-            } else {
-                audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
-            }
-        }
+    companion object {
+        const val ACTION_STATUS_UPDATE = "com.lokesh.campusquiet.STATUS_UPDATE"
+        const val EXTRA_STATUS_MESSAGE = "statusMessage"
+        const val CHANNEL_ID = "BeaconScanServiceChannel"
     }
 
     override fun onCreate() {
         super.onCreate()
+        beaconManager = BeaconManager.getInstanceForApplication(this)
 
-        audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
+        beaconManager.addRangeNotifier { beacons, _ ->
+            val distance = if (beacons.isNotEmpty()) beacons.minByOrNull { it.distance }!!.distance else -1.0
+            val isInRange = distance != -1.0 && distance < DISTANCE_THRESHOLD
 
-        // ✅ MUST be called immediately
-        createNotificationChannel()
-        startForeground(NOTIFICATION_ID, buildNotification())
-
-        startScanning()
+            if (isInRange) {
+                // --- IN CLASSROOM: ENFORCE VIBRATE ---
+                enforceVibrateMode()
+                val statusMessage = "In Classroom (${df.format(distance)} m). Mute Policy is Active."
+                broadcastStatus(statusMessage)
+                updateNotification(statusMessage)
+            } else {
+                // --- OUT OF CLASSROOM: RESTORE NORMAL ---
+                restoreNormalMode()
+                val statusMessage = "Out of Classroom. Phone in Normal Mode."
+                broadcastStatus(statusMessage)
+                updateNotification(statusMessage)
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        createNotificationChannel()
+        val notification = createNotification("Scanning for classroom...")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+        } else {
+            startForeground(1, notification)
+        }
+        beaconManager.startRangingBeacons(region)
         return START_STICKY
     }
 
-    private fun startScanning() {
-
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.BLUETOOTH_SCAN
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            Log.e("BeaconScan", "BLUETOOTH_SCAN permission missing")
-            stopSelf()
-            return
-        }
-
-        val scanner = bluetoothAdapter?.bluetoothLeScanner ?: return
-
-        val filter = ScanFilter.Builder()
-            .setDeviceAddress(TARGET_MAC)
-            .build()
-
-        val settings = ScanSettings.Builder()
-            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-            .build()
-
-        scanner.startScan(listOf(filter), settings, scanCallback)
+    override fun onDestroy() {
+        super.onDestroy()
+        beaconManager.stopRangingBeacons(region)
+        restoreNormalMode() // Final cleanup
     }
 
-    private fun buildNotification(): Notification {
+    // --- THIS IS THE FINAL, CORRECTED LOGIC ---
+
+    private fun enforceVibrateMode() {
+        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        isPolicyEnforced = true // Set the flag indicating we are in control.
+
+        // If the user tries to manually change the mode, this will force it back.
+        if (audioManager.ringerMode != AudioManager.RINGER_MODE_SILENT) {
+            audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
+        }
+    }
+
+    private fun restoreNormalMode() {
+        // Only restore to Normal Mode if we were the ones who previously enforced the policy.
+        if (isPolicyEnforced) {
+            val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
+            isPolicyEnforced = false // We are no longer in control.
+        }
+    }
+
+    // --- HELPER FUNCTIONS ---
+
+    private fun broadcastStatus(message: String) {
+        val intent = Intent(ACTION_STATUS_UPDATE).apply {
+            putExtra(EXTRA_STATUS_MESSAGE, message)
+        }
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+    }
+
+    private fun updateNotification(contentText: String) {
+        val notification = createNotification(contentText)
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(1, notification)
+    }
+
+    private fun createNotification(contentText: String): Notification {
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("CampusQuiet Active")
-            .setContentText("Monitoring silent zone")
-            .setSmallIcon(android.R.drawable.ic_lock_silent_mode)
+            .setContentTitle("CampusQuiet Policy Active")
+            .setContentText(contentText)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setOngoing(true)
             .build()
     }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "CampusQuiet Background Service",
-                NotificationManager.IMPORTANCE_LOW
-            )
+            val channel = NotificationChannel(CHANNEL_ID, "Attendance Policy Service", NotificationManager.IMPORTANCE_LOW)
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)
         }

@@ -1,24 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:gravity="center"
-    android:padding="24dp">
+    android:orientation="vertical"
+    android:padding="24dp"
+    tools:context=".MainActivity">
 
     <TextView
-        android:id="@+id/tvWelcome"
+        android:id="@+id/tvAttendanceStatus"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Welcome to CampusQuiet"
+        android:text="Scanning for classroom..."
         android:textSize="22sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="24dp" />
-
-    <Button
-        android:id="@+id/btnLogout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Logout" />
+        android:textAlignment="center"
+        android:textStyle="bold" />
 
 </LinearLayout>

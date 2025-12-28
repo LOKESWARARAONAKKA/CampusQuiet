@@ -2,26 +2,27 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.lokesh.campusquiet">
 
-    <!-- Bluetooth & Location Permissions -->
+    <!-- REQUIRED PERMISSIONS -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
-
-    <uses-feature
-        android:name="android.hardware.bluetooth_le"
-        android:required="true" />
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
 
     <application
+        android:name=".MyApplication"
         android:allowBackup="true"
-        android:icon="@android:drawable/ic_lock_silent_mode_off"
+        android:icon="@mipmap/ic_launcher"
         android:label="CampusQuiet"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.CampusQuiet">
 
-        <!-- 🔹 LOGIN (LAUNCHER) -->
         <activity
             android:name=".LoginActivity"
             android:exported="true">
@@ -31,21 +32,14 @@
             </intent-filter>
         </activity>
 
-        <!-- 🔹 REGISTER -->
-        <activity
-            android:name=".RegisterActivity"
-            android:exported="false" />
+        <activity android:name=".MainActivity" />
+        <activity android:name=".RegisterActivity" />
 
-        <!-- 🔹 HOME -->
-        <activity
-            android:name=".MainActivity"
-            android:exported="false" />
-
-        <!-- 🔹 BACKGROUND SERVICE -->
+        <!-- FOREGROUND SERVICE -->
         <service
             android:name=".BeaconScanService"
             android:exported="false"
-            android:foregroundServiceType="location" />
+            android:foregroundServiceType="connectedDevice" />
 
     </application>
 
