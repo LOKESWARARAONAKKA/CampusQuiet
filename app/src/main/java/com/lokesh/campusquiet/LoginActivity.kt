@@ -36,25 +36,26 @@ class LoginActivity : AppCompatActivity() {
 
             auth.signInWithEmailAndPassword(email, password)
                 .addOnSuccessListener {
-
-                    startActivity(
-                        Intent(this, MainActivity::class.java)
-                    )
+                    startActivity(Intent(this, MainActivity::class.java))
                     finish()
                 }
                 .addOnFailureListener { e ->
-                    Toast.makeText(
-                        this,
-                        "Login failed: ${e.message}",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    Toast.makeText(this, "Login failed: ${e.message}", Toast.LENGTH_LONG).show()
                 }
         }
 
         registerTv.setOnClickListener {
-            startActivity(
-                Intent(this, RegisterActivity::class.java)
-            )
+            startActivity(Intent(this, RegisterActivity::class.java))
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Check if user is signed in (non-null) and update UI accordingly.
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            startActivity(Intent(this, MainActivity::class.java))
+            finish()
         }
     }
 }

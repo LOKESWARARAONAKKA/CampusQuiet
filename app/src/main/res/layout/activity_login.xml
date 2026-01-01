@@ -41,7 +41,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="New user? Register here"
-        android:textColor="@android:color/holo_blue_dark"
         android:layout_marginTop="20dp" />
 
 </LinearLayout>

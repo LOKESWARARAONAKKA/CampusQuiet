@@ -21,7 +21,6 @@ class BeaconScanService : Service() {
     private lateinit var beaconManager: BeaconManager
     private val region = Region("CampusQuiet", null, null, null)
 
-    // This flag tracks if the app is currently enforcing the classroom policy.
     private var isPolicyEnforced = false
 
     private val DISTANCE_THRESHOLD = 10.0
@@ -37,18 +36,22 @@ class BeaconScanService : Service() {
         super.onCreate()
         beaconManager = BeaconManager.getInstanceForApplication(this)
 
+        // *** THIS IS THE CRITICAL FIX FOR ACCURACY ***
+        // Set for more aggressive scanning to improve responsiveness.
+        // We will scan for 1.1 seconds and then wait only 0.2 seconds before scanning again.
+        beaconManager.foregroundScanPeriod = 1100L
+        beaconManager.foregroundBetweenScanPeriod = 200L
+
         beaconManager.addRangeNotifier { beacons, _ ->
             val distance = if (beacons.isNotEmpty()) beacons.minByOrNull { it.distance }!!.distance else -1.0
             val isInRange = distance != -1.0 && distance < DISTANCE_THRESHOLD
 
             if (isInRange) {
-                // --- IN CLASSROOM: ENFORCE VIBRATE ---
                 enforceVibrateMode()
                 val statusMessage = "In Classroom (${df.format(distance)} m). Mute Policy is Active."
                 broadcastStatus(statusMessage)
                 updateNotification(statusMessage)
             } else {
-                // --- OUT OF CLASSROOM: RESTORE NORMAL ---
                 restoreNormalMode()
                 val statusMessage = "Out of Classroom. Phone in Normal Mode."
                 broadcastStatus(statusMessage)
@@ -75,24 +78,20 @@ class BeaconScanService : Service() {
         restoreNormalMode() // Final cleanup
     }
 
-    // --- THIS IS THE FINAL, CORRECTED LOGIC ---
-
     private fun enforceVibrateMode() {
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        isPolicyEnforced = true // Set the flag indicating we are in control.
+        isPolicyEnforced = true
 
-        // If the user tries to manually change the mode, this will force it back.
-        if (audioManager.ringerMode != AudioManager.RINGER_MODE_SILENT) {
-            audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
+        if (audioManager.ringerMode != AudioManager.RINGER_MODE_VIBRATE) {
+            audioManager.ringerMode = AudioManager.RINGER_MODE_VIBRATE
         }
     }
 
     private fun restoreNormalMode() {
-        // Only restore to Normal Mode if we were the ones who previously enforced the policy.
         if (isPolicyEnforced) {
             val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
             audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
-            isPolicyEnforced = false // We are no longer in control.
+            isPolicyEnforced = false
         }
     }
 
