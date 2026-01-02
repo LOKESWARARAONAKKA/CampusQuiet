@@ -10,8 +10,11 @@ import android.content.pm.ServiceInfo
 import android.media.AudioManager
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import org.altbeacon.beacon.BeaconManager
 import org.altbeacon.beacon.Region
 import java.text.DecimalFormat
@@ -20,11 +23,15 @@ class BeaconScanService : Service() {
 
     private lateinit var beaconManager: BeaconManager
     private val region = Region("CampusQuiet", null, null, null)
-
-    private var isPolicyEnforced = false
+    private var currentState: State = State.OUT_OF_CLASSROOM
 
     private val DISTANCE_THRESHOLD = 10.0
     private val df = DecimalFormat("#.##")
+
+    private lateinit var auth: FirebaseAuth
+    private lateinit var db: FirebaseFirestore
+
+    enum class State { IN_CLASSROOM, OUT_OF_CLASSROOM }
 
     companion object {
         const val ACTION_STATUS_UPDATE = "com.lokesh.campusquiet.STATUS_UPDATE"
@@ -34,29 +41,48 @@ class BeaconScanService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        auth = FirebaseAuth.getInstance()
+        db = FirebaseFirestore.getInstance()
         beaconManager = BeaconManager.getInstanceForApplication(this)
 
-        // *** THIS IS THE CRITICAL FIX FOR ACCURACY ***
-        // Set for more aggressive scanning to improve responsiveness.
-        // We will scan for 1.1 seconds and then wait only 0.2 seconds before scanning again.
         beaconManager.foregroundScanPeriod = 1100L
         beaconManager.foregroundBetweenScanPeriod = 200L
 
         beaconManager.addRangeNotifier { beacons, _ ->
             val distance = if (beacons.isNotEmpty()) beacons.minByOrNull { it.distance }!!.distance else -1.0
-            val isInRange = distance != -1.0 && distance < DISTANCE_THRESHOLD
+            val newState = if (distance != -1.0 && distance < DISTANCE_THRESHOLD) State.IN_CLASSROOM else State.OUT_OF_CLASSROOM
 
-            if (isInRange) {
-                enforceVibrateMode()
-                val statusMessage = "In Classroom (${df.format(distance)} m). Mute Policy is Active."
-                broadcastStatus(statusMessage)
-                updateNotification(statusMessage)
-            } else {
-                restoreNormalMode()
-                val statusMessage = "Out of Classroom. Phone in Normal Mode."
-                broadcastStatus(statusMessage)
-                updateNotification(statusMessage)
+            if (newState != currentState) {
+                Log.d("BeaconService", "State changed from $currentState to $newState")
+                currentState = newState
+
+                if (currentState == State.IN_CLASSROOM) {
+                    setVibrateMode()
+                    updateStudentStatus(true)
+                } else {
+                    setNormalMode()
+                    updateStudentStatus(false)
+                }
             }
+            
+            val statusMessage = if (currentState == State.IN_CLASSROOM) {
+                "In Classroom (${df.format(distance)} m). Mute Policy is Active."
+            } else {
+                "Out of Classroom. Phone in Normal Mode."
+            }
+            broadcastStatus(statusMessage)
+            updateNotification(statusMessage)
+        }
+    }
+
+    private fun updateStudentStatus(present: Boolean) {
+        val userId = auth.currentUser?.uid
+        if (userId != null) {
+            db.collection("students").document(userId).update("isPresent", present)
+                .addOnSuccessListener { Log.d("BeaconService", "Successfully set isPresent to $present for user $userId") }
+                .addOnFailureListener { e -> Log.e("BeaconService", "Failed to update isPresent for user $userId", e) }
+        } else {
+            Log.w("BeaconService", "Cannot update status, user is not logged in.")
         }
     }
 
@@ -75,27 +101,31 @@ class BeaconScanService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         beaconManager.stopRangingBeacons(region)
-        restoreNormalMode() // Final cleanup
+        setNormalMode()
+        updateStudentStatus(false) // Final cleanup on service destroy
+    }
+    
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        Log.d("BeaconService", "Task removed, cleaning up.")
+        setNormalMode()
+        updateStudentStatus(false)
+        stopSelf()
     }
 
-    private fun enforceVibrateMode() {
+    private fun setVibrateMode() {
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        isPolicyEnforced = true
-
         if (audioManager.ringerMode != AudioManager.RINGER_MODE_VIBRATE) {
             audioManager.ringerMode = AudioManager.RINGER_MODE_VIBRATE
         }
     }
 
-    private fun restoreNormalMode() {
-        if (isPolicyEnforced) {
-            val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    private fun setNormalMode() {
+        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        if (audioManager.ringerMode != AudioManager.RINGER_MODE_NORMAL) {
             audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
-            isPolicyEnforced = false
         }
     }
-
-    // --- HELPER FUNCTIONS ---
 
     private fun broadcastStatus(message: String) {
         val intent = Intent(ACTION_STATUS_UPDATE).apply {

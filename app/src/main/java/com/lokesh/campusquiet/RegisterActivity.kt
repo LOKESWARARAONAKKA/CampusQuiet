@@ -59,7 +59,9 @@ class RegisterActivity : AppCompatActivity() {
                         "rollNo" to rollNo,
                         "branch" to branch,
                         "section" to section,
-                        "deviceId" to deviceId
+                        "deviceId" to deviceId,
+                        "role" to "student", // Default role for all new users
+                        "isPresent" to false // Default attendance status
                     )
 
                     db.collection("students").document(uid)
