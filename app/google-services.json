@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "673273106680",
+    "project_id": "campusquiet",
+    "storage_bucket": "campusquiet.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:673273106680:android:fad23a86f5b3b64719ab0d",
+        "android_client_info": {
+          "package_name": "com.lokesh.campusquiet"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxO95lsQeIGRQ-0zqlxBuYrZCP_C1NCuA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
