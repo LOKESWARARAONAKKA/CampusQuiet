@@ -10,18 +10,38 @@
         android:id="@+id/tvDashboardTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Teacher Dashboard: Present Students"
+        android:text="Teacher's Dashboard:"
         android:textSize="24sp"
         android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvStudentCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@+id/tvDashboardTitle"
+        android:layout_alignBaseline="@+id/tvDashboardTitle"
+        android:layout_marginStart="8dp"
+        android:textSize="18sp"
+        tools:text="(0)" />
 
     <ImageButton
         android:id="@+id/btnRefresh"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_toStartOf="@+id/btnLogout"
+        android:layout_marginEnd="16dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_refresh_black_24dp" />
+
+    <ImageButton
+        android:id="@+id/btnLogout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
         android:layout_alignParentTop="true"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@drawable/ic_refresh_black_24dp" />
+        android:src="@drawable/ic_exit_to_app_black_24dp" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewStudents"

@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">CampusQuiet</string>
+    <string name="student_count_format">(%d)</string>
 </resources>
